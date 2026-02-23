@@ -18,7 +18,7 @@
 
         body { display: flex; height: 100vh; overflow: hidden; }
 
-       
+        
 
         #sidebar {
 
@@ -42,7 +42,7 @@
 
         #sidebar.hide { margin-left: calc(var(--sidebar-w) * -1); }
 
-       
+        
 
         .sidebar-header { padding: 25px; background: #001f35; text-align: center; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
 
@@ -50,19 +50,19 @@
 
         .menu-title { padding: 15px 20px; cursor: pointer; background: rgba(0,0,0,0.2); font-size: 0.8rem; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
 
-       
+        
 
         .menu-items { list-style: none; display: none; }
 
         .menu-items.open { display: block; }
 
-       
+        
 
         .menu-items li { padding: 10px 15px 10px 20px; color: #b0c4de; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
 
         .menu-items li:hover { background: rgba(255,255,255,0.05); color: white; border-left: 4px solid var(--accent); }
 
-       
+        
 
         /* Ajustes para Níveis Subordinados (Submenus) */
 
@@ -82,7 +82,7 @@
 
         .submenu.open { display: block; }
 
-       
+        
 
         .has-sub { font-weight: 600; color: white !important; }
 
@@ -103,6 +103,10 @@
         .top-bar { height: 60px; background: white; border-bottom: 1px solid #eee; display: flex; align-items: center; padding: 0 20px; }
 
         iframe { width: 100%; height: 100%; border: none; }
+
+        
+        /* Estilo para a mensagem central */
+        .welcome-msg { display: flex; flex: 1; align-items: center; justify-content: center; font-weight: 600; color: var(--primary); }
 
     </style>
 
@@ -128,7 +132,10 @@
 
         </div>
 
-        <iframe name="content-frame" id="content-frame" src="pages/aprovacao-arq-acc.html"></iframe>
+        <div id="content-area" style="flex: 1; display: flex;">
+            <iframe name="content-frame" id="content-frame" src="about:blank" style="display: none;"></iframe>
+            <div id="placeholder-msg" class="welcome-msg">Utilize o menu lateral</div>
+        </div>
 
     </main>
 
@@ -144,7 +151,7 @@
 
             const li = document.createElement('li');
 
-           
+            
 
             if (item.subitens && item.subitens.length > 0) {
 
@@ -156,17 +163,17 @@
 
                 li.appendChild(textNode);
 
-               
+                
 
                 li.className = 'has-sub';
 
-               
+                
 
                 const subUl = document.createElement('ul');
 
                 subUl.className = 'submenu';
 
-               
+                
 
                 item.subitens.forEach(sub => {
 
@@ -174,7 +181,7 @@
 
                 });
 
-               
+                
 
                 li.onclick = (e) => {
 
@@ -182,7 +189,7 @@
 
                     const isOpen = subUl.classList.contains('open');
 
-                   
+                    
 
                     if (isOpen) {
 
@@ -202,7 +209,7 @@
 
                 };
 
-               
+                
 
                 li.appendChild(subUl);
 
@@ -223,7 +230,9 @@
                             console.log("Link em desenvolvimento: " + item.nome);
 
                         } else {
-
+                            // MOSTRAR IFRAME E ESCONDER MENSAGEM AO CLICAR
+                            document.getElementById('content-frame').style.display = 'block';
+                            document.getElementById('placeholder-msg').style.display = 'none';
                             document.getElementById('content-frame').src = item.link;
 
                         }
@@ -246,7 +255,7 @@
 
             if (!container || !window.CONFIG) return;
 
-           
+            
 
             container.innerHTML = '';
 
@@ -258,7 +267,7 @@
 
                 section.className = 'menu-section';
 
-               
+                
 
                 const title = document.createElement('div');
 
@@ -266,13 +275,13 @@
 
                 title.innerHTML = `${grupo.titulo} <span class="arrow">▼</span>`;
 
-               
+                
 
                 const ul = document.createElement('ul');
 
                 ul.className = 'menu-items';
 
-               
+                
 
                 title.onclick = () => {
 
