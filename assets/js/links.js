@@ -83,7 +83,7 @@ window.CONFIG = {
     nome: "Hidráulica",        
     subitens: [
         { nome: "POP", link: "assets/bpmn/arq-modelagem-familias.bpmn" },
-        { nome: "Checklist (escolas)", link: "pages/hid-checklist-escolas.html" }
+        { nome: "Checklist - Escolas", link: "pages/hid-checklist-escolas.html" }
     ] 
 }
             ]
@@ -113,3 +113,4 @@ window.CONFIG = {
         }
     }
 };
+
