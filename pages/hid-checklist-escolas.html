@@ -10,10 +10,8 @@
         :root { --primary: #002B49; --accent: #F26522; --bg: #f5f5f5; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
         
-        /* Permitir rolagem natural da página */
         body { background: var(--bg); color: #333; min-height: 100vh; overflow-y: auto; }
 
-        /* Cabeçalho não fixo - ele sobe com a rolagem */
         header { 
             background: white; 
             padding: 20px 40px; 
@@ -25,7 +23,6 @@
         #disciplina-tit { color: var(--primary); font-weight: 800; font-size: 1.6rem; text-transform: uppercase; line-height: 1.1; }
         #checklist-tit { color: #666; font-weight: 500; font-size: 1rem; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
 
-        /* Controles acompanham o fluxo da página */
         .controls { 
             padding: 15px 40px; 
             display: flex; 
@@ -33,7 +30,7 @@
             background: white; 
             border-bottom: 1px solid #ddd; 
             align-items: center;
-            position: sticky; /* Opcional: mantém apenas os botões se quiser, mas aqui deixei normal */
+            position: sticky;
             top: 0;
             z-index: 100;
         }
@@ -50,7 +47,6 @@
         
         #status-save { font-size: 0.75rem; color: #aaa; font-style: italic; }
 
-        /* Container ajustado para rolagem da página toda */
         #checklist-container { 
             padding: 30px 40px; 
             max-width: 1300px; 
@@ -131,6 +127,7 @@
                 
                 const checkSheet = currentWorkbook.getWorksheet('CHECKLIST');
 
+                // Títulos do Cabeçalho
                 const disciplina = checkSheet.getCell('A3').value;
                 document.getElementById('disciplina-tit').innerText = disciplina || 'DISCIPLINA';
 
@@ -141,14 +138,18 @@
                 });
                 document.getElementById('checklist-tit').innerText = tituloPlanilha || 'CHECKLIST DE PROJETOS';
 
+                // --- CORREÇÃO AQUI: Capturando Opções de A1 a A3 ---
                 const optSheet = currentWorkbook.getWorksheet('OPÇÕES');
                 options = [];
                 if(optSheet) {
-                    optSheet.getColumn(1).eachCell((cell, rowNumber) => {
-                        if(rowNumber > 1 && cell.value) options.push(cell.value.toString());
-                    });
+                    // Iteramos pelas linhas 1, 2 e 3 explicitamente
+                    for (let i = 1; i <= 3; i++) {
+                        const val = optSheet.getRow(i).getCell(1).value;
+                        if (val) options.push(val.toString().trim());
+                    }
                 }
 
+                // Carregar Itens do Checklist
                 checklistData = [];
                 checkSheet.eachRow((row, rowNumber) => {
                     if (rowNumber >= 5) {
@@ -192,6 +193,7 @@
                 let html = `<div class="discipline-title">${group}</div>`;
                 
                 grouped[group].forEach(item => {
+                    // Gera um ID único baseado no texto do item para salvar no cache
                     const safeId = btoa(unescape(encodeURIComponent(item.item))).substring(0, 24);
                     html += `
                         <div class="item-row">
@@ -217,7 +219,7 @@
             const cache = JSON.parse(localStorage.getItem('p_avelar_cache_hid_v2') || '{}');
             cache[id] = value;
             localStorage.setItem('p_avelar_cache_hid_v2', JSON.stringify(cache));
-            document.getElementById('status-save').innerText = "Alterações salvas.";
+            document.getElementById('status-save').innerText = "Alterações salvas localmente.";
         }
 
         function checkLocalStorage() {
@@ -232,7 +234,7 @@
         }
 
         function clearData() {
-            if(confirm('Isso apagará todas as seleções feitas. Continuar?')) {
+            if(confirm('Isso apagará todas as seleções feitas nesta página. Continuar?')) {
                 localStorage.removeItem('p_avelar_cache_hid_v2');
                 location.reload();
             }
@@ -247,8 +249,11 @@
                 selects.forEach(sel => {
                     const rowNum = parseInt(sel.getAttribute('data-row'));
                     const value = sel.value;
+                    // Salva o valor selecionado na Coluna E (índice 5) conforme lógica original
                     if(value) {
                         checkSheet.getRow(rowNum).getCell(5).value = value;
+                    } else {
+                        checkSheet.getRow(rowNum).getCell(5).value = null;
                     }
                 });
 
@@ -257,10 +262,11 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'CHECKLIST_ESCOLAS_FINAL.xlsx';
+                a.download = 'CHECKLIST_ESCOLAS_PREENCHIDO.xlsx';
                 a.click();
             } catch (err) {
-                alert("Erro ao exportar.");
+                console.error(err);
+                alert("Erro ao exportar o arquivo.");
             } finally {
                 document.getElementById('loading-overlay').style.display = 'none';
             }
