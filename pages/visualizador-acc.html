@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js/dist/assets/diagram-js.css" />
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js/dist/assets/bpmn-font/css/bpmn.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #002B49; 
+            --accent: #F26522; 
+            --link-blue: #007bff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body, html { height: 100%; overflow: hidden; background: #f5f5f5; }
+        
+        /* Barra de Ferramentas com Tamanho Constante */
+        .controls-bar {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centraliza o conteúdo */
+            gap: 15px;
+            
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0 25px;
+            
+            /* ALTURA FIXA para evitar que fique mais grossa */
+            height: 45px; 
+            /* LARGURA MÍNIMA para evitar que estique horizontalmente de forma brusca */
+            min-width: 280px; 
+            
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid #ddd;
+        }
+
+        .btn-back {
+            background: var(--primary);
+            color: white;
+            border: none;
+            height: 28px; /* Altura fixa menor que a barra */
+            padding: 0 15px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: none; 
+            transition: background 0.2s;
+            white-space: nowrap; /* Impede quebra de linha */
+        }
+        .btn-back:hover { background: var(--accent); }
+
+        .zoom-info {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        #canvas { width: 100%; height: 100vh; background: #fff; }
+
+        /* Estilos BPMN */
+        .highlight-link .djs-visual > rect, 
+        .highlight-link .djs-visual > circle, 
+        .highlight-link .djs-visual > polygon {
+            stroke: var(--link-blue) !important;
+            stroke-width: 2px !important;
+            fill: rgba(0, 123, 255, 0.05) !important;
+        }
+        .highlight-link text { fill: var(--link-blue) !important; font-weight: bold !important; text-decoration: underline; }
+        .highlight-node .djs-visual > :first-child { fill: rgba(242, 101, 34, 0.1) !important; stroke: var(--accent) !important; stroke-width: 3px !important; cursor: pointer !important; }
+        .bjs-powered-by { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="controls-bar">
+        <button id="backButton" class="btn-back" onclick="goBack()">← VOLTAR</button>
+        <div class="zoom-info">Ctrl + Scroll para Zoom</div>
+    </div>
+
+    <div id="canvas"></div>
+
+    <script src="https://unpkg.com/bpmn-js/dist/bpmn-navigated-viewer.development.js"></script>
+    <script src="../assets/js/filepaths.js"></script>
+
+    <script>
+        const bpmnViewer = new BpmnJS({ container: '#canvas' });
+        let historyStack = [];
+
+        async function loadDiagram(relativePath, isBack = false) {
+            if (!relativePath) return;
+            try {
+                const finalUrl = relativePath.startsWith('http') ? relativePath : '../' + relativePath;
+                const res = await fetch(finalUrl);
+                const xml = await res.text();
+                await bpmnViewer.importXML(xml);
+                
+                if (!isBack) {
+                    if (historyStack.length === 0 || historyStack[historyStack.length - 1] !== relativePath) {
+                        historyStack.push(relativePath);
+                    }
+                }
+                updateBackButton();
+                applyLinkStyles();
+                bpmnViewer.get('canvas').zoom('fit-viewport');
+            } catch (e) { console.error("Erro:", e); }
+        }
+
+        function applyLinkStyles() {
+            const canvas = bpmnViewer.get('canvas');
+            bpmnViewer.get('elementRegistry').forEach(element => {
+                if (['bpmn:Task', 'bpmn:SubProcess', 'bpmn:CallActivity'].includes(element.type)) {
+                    const name = element.businessObject.name;
+                    if (getAsset(name, "BPMN") || getAsset(name, "DOCS")) {
+                        canvas.addMarker(element.id, 'highlight-link');
+                    }
+                }
+            });
+        }
+
+        function updateBackButton() {
+            const btn = document.getElementById('backButton');
+            // Usamos display: block para garantir que ele respeite a altura do flex
+            btn.style.display = historyStack.length > 1 ? 'block' : 'none';
+        }
+
+        function goBack() {
+            if (historyStack.length > 1) {
+                historyStack.pop();
+                const previous = historyStack[historyStack.length - 1];
+                loadDiagram(previous, true);
+            }
+        }
+
+        bpmnViewer.get('eventBus').on('element.click', (e) => {
+            const name = e.element.businessObject.name;
+            const bpmnPath = getAsset(name, "BPMN");
+            if (bpmnPath) loadDiagram(bpmnPath);
+            const docPath = getAsset(name, "DOCS");
+            if (docPath) window.open(docPath, '_blank');
+        });
+
+        bpmnViewer.get('eventBus').on('element.hover', (e) => {
+            const name = e.element.businessObject.name;
+            if (getAsset(name, "BPMN") || getAsset(name, "DOCS")) {
+                bpmnViewer.get('canvas').addMarker(e.element.id, 'highlight-node');
+            }
+        });
+
+        window.onload = () => {
+            if (typeof PROJECT_ASSETS !== 'undefined') {
+                loadDiagram(PROJECT_ASSETS.BPMN["GERAL-MACRO"]);
+            }
+        };
+    </script>
+</body>
+</html>

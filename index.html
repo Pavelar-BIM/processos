@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P. AVELAR - WIKI & PROCESSOS</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js/dist/assets/diagram-js.css" />
+    <link rel="stylesheet" href="https://unpkg.com/bpmn-js/dist/assets/bpmn-font/css/bpmn.css" />
+    
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        :root { --primary-color: #002B49; --accent-color: #F26522; --bg-light: #f8f9fa; --text-dark: #333; --sidebar-width: 300px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body { display: flex; height: 100vh; overflow: hidden; background-color: var(--bg-light); color: var(--text-dark); }
+
+        /* SIDEBAR */
+        #sidebar { width: var(--sidebar-width); background-color: var(--primary-color); color: white; display: flex; flex-direction: column; overflow-y: auto; flex-shrink: 0; transition: margin-left 0.3s ease; z-index: 100; border-right: 1px solid rgba(0,0,0,0.2); }
+        #sidebar.hide { margin-left: calc(var(--sidebar-width) * -1); }
+        .sidebar-header { padding: 25px; background: #001f35; text-align: center; font-weight: 700; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo-sub { display: block; font-size: 0.65rem; font-weight: 300; color: #ccc; margin-top: 5px; opacity: 0.8; }
+        
+        /* MENU */
+        .menu-section { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .menu-title { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #eee; user-select: none; transition: background 0.2s; }
+        .menu-title:hover { background-color: rgba(255,255,255,0.1); }
+        .menu-items { list-style: none; background: #00223a; display: block; }
+        .closed { display: none !important; }
+        .menu-items li { padding: 10px 20px 10px 40px; cursor: pointer; font-size: 0.85rem; color: #b0c4de; border-left: 4px solid transparent; transition: all 0.2s; }
+        .menu-items li:hover { background: rgba(255,255,255,0.05); color: white; border-left-color: var(--accent-color); }
+
+        /* ÁREA PRINCIPAL */
+        #main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; background: white; position: relative; }
+        .top-bar { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.03); z-index: 10; }
+        .toggle-btn { font-size: 1.5rem; background: none; border: none; cursor: pointer; color: var(--primary-color); margin-right: 20px; }
+        #breadcrumb { font-size: 0.9rem; font-weight: 500; color: #666; }
+        .content-area { flex: 1; overflow-y: auto; position: relative; background-color: #fff; }
+        
+        /* CONTEÚDO WIKI (HTML) */
+        #wiki-container { padding: 50px; max-width: 1000px; margin: 0 auto; line-height: 1.6; color: #444; }
+        #wiki-container h1 { color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+        
+        /* VISUALIZADOR BPMN */
+        #bpmn-view { width: 100%; height: 100%; }
+        #canvas { width: 100%; height: 100%; background: #fff; }
+        .hidden { display: none !important; }
+        .bjs-powered-by { display: none; }
+        .highlight-node .djs-visual > :first-child { fill: rgba(242, 101, 34, 0.1) !important; stroke: var(--accent-color) !important; stroke-width: 3px !important; cursor: pointer !important; }
+        .floating-btn { position: absolute; top: 20px; left: 20px; z-index: 999; padding: 10px 15px; background: white; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: 600; color: var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* ALERTA */
+        .copy-alert {
+            display: none; position: fixed; bottom: 20px; right: 20px; 
+            background: #333; color: #fff; padding: 15px; border-radius: 5px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 2000; font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            P. AVELAR <span class="logo-sub">HUB DE PROCESSOS</span>
+        </div>
+        <div id="menu-container"></div>
+    </aside>
+
+    <main id="main-content">
+        <div class="top-bar">
+            <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+            <span id="breadcrumb">Início</span>
+        </div>
+
+        <div id="wiki-view" class="content-area">
+            <div id="wiki-container">
+                <h1 style="border:none;">Bem-vindo</h1>
+                <p>Selecione um item no menu lateral.</p>
+            </div>
+        </div>
+
+        <div id="bpmn-view" class="content-area hidden">
+            <div id="canvas"></div>
+            <button class="floating-btn" onclick="loadDefaultFlow()">⟲ Início</button>
+        </div>
+    </main>
+    
+    <div id="alert-box" class="copy-alert">Caminho copiado!</div>
+
+    <script src="https://unpkg.com/bpmn-js/dist/bpmn-navigated-viewer.development.js"></script>
+    <script src="assets/js/links.js"></script> 
+
+    <script>
+        // --- 1. CONSTRUTOR DE MENU ---
+        function renderMenu() {
+            const container = document.getElementById('menu-container');
+            
+            // Verifica se o arquivo links.js carregou
+            if (!window.CONFIG) {
+                container.innerHTML = `
+                    <div style='padding:20px; color:#ffaaaa; font-size:0.8rem;'>
+                        <strong>ERRO CRÍTICO:</strong><br>
+                        Não encontrei o arquivo <code>assets/js/links.js</code>.<br><br>
+                        Verifique se a pasta 'assets/js' existe e se o arquivo está lá.
+                    </div>`;
+                return;
+            }
+
+            window.CONFIG.menus.forEach(grupo => {
+                const section = document.createElement('div');
+                section.className = 'menu-section';
+                
+                const title = document.createElement('div');
+                title.className = 'menu-title';
+                title.innerHTML = `${grupo.titulo} <span>▼</span>`;
+                title.onclick = function() { this.nextElementSibling.classList.toggle('closed'); };
+
+                const ul = document.createElement('ul');
+                ul.className = 'menu-items closed';
+
+                grupo.itens.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerText = item.nome;
+                    
+                    if (item.tipo === 'acao_fluxo') {
+                        // Botão que só abre a tela de fluxo (mantido para compatibilidade, mas não usado nos novos links)
+                        li.onclick = () => openFlows();
+                    } else {
+                        // Link inteligente (HTML, BPMN ou Externo)
+                        li.onclick = () => handleLink(item.link, `${grupo.titulo} > ${item.nome}`);
+                    }
+                    ul.appendChild(li);
+                });
+
+                section.appendChild(title);
+                section.appendChild(ul);
+                container.appendChild(section);
+            });
+        }
+
+        // --- 2. GERENCIADOR DE LINKS ---
+        async function handleLink(url, breadcrumbTitle) {
+            const wikiView = document.getElementById('wiki-view');
+            const bpmnView = document.getElementById('bpmn-view');
+            const container = document.getElementById('wiki-container');
+
+            // MODO 1: PÁGINAS HTML (Wiki)
+            if (url.endsWith('.html')) {
+                bpmnView.classList.add('hidden');
+                wikiView.classList.remove('hidden');
+                document.getElementById('breadcrumb').innerText = breadcrumbTitle;
+                
+                container.innerHTML = "<p style='color:#888;'>Carregando...</p>";
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error("404");
+                    container.innerHTML = await response.text();
+                } catch (e) {
+                    container.innerHTML = `<h2>Erro 404</h2><p>Não encontrei o arquivo: <strong>${url}</strong></p>`;
+                }
+            } 
+            // MODO 2: ARQUIVOS BPMN (Fluxogramas) - AQUI ESTÁ A MÁGICA
+            else if (url.endsWith('.bpmn')) {
+                openFlows(); 
+                document.getElementById('breadcrumb').innerText = breadcrumbTitle;
+                loadFlow(url); // Carrega o arquivo BPMN específico e exibe no visualizador
+            }
+            // MODO 3: LINKS EXTERNOS / PASTAS
+            else {
+                const win = window.open(url, '_blank');
+                if (!win && (url.includes("G:") || url.includes("\\"))) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        showAlert(`Caminho copiado: ${url}`);
+                    }).catch(() => {
+                        showAlert(`Abra manualmente: ${url}`);
+                    });
+                }
+            }
+        }
+
+        function showAlert(msg) {
+            const box = document.getElementById('alert-box');
+            box.innerText = msg;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('hide'); }
+
+        // --- 3. LÓGICA BPMN ---
+        let bpmnViewer = null;
+
+        function openFlows() {
+            document.getElementById('wiki-view').classList.add('hidden');
+            document.getElementById('bpmn-view').classList.remove('hidden');
+            document.getElementById('breadcrumb').innerText = "Fluxo de Processos";
+            if(bpmnViewer) bpmnViewer.get('canvas').zoom('fit-viewport');
+        }
+
+        async function loadFlow(url) {
+            if (!bpmnViewer) return;
+
+            try {
+                // Limpa o canvas e mostra loading
+                bpmnViewer.clear();
+                
+                const res = await fetch(url);
+                if(!res.ok) throw new Error(`Status ${res.status}`);
+                
+                const xml = await res.text();
+                await bpmnViewer.importXML(xml);
+                bpmnViewer.get('canvas').zoom('fit-viewport');
+
+            } catch(e) { 
+                console.error(e);
+                alert(`ERRO:\nNão foi possível abrir o arquivo: ${url}\n\nVerifique se o arquivo .bpmn está na pasta 'assets/bpmn/'.`);
+            }
+        }
+
+        function loadDefaultFlow() {
+            if(window.CONFIG && window.CONFIG.fluxogramas) {
+                loadFlow(window.CONFIG.fluxogramas.inicial);
+            }
+        }
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMenu();
+
+            if(typeof BpmnJS !== 'undefined') {
+                bpmnViewer = new BpmnJS({ container: '#canvas' });
+                // Não carregamos o fluxo inicial automaticamente aqui para deixar a tela limpa ou carregar o padrão se desejado.
+                // loadDefaultFlow(); 
+
+                const eventBus = bpmnViewer.get('eventBus');
+                const canvas = bpmnViewer.get('canvas');
+
+                // Interação com o diagrama (clique nos processos para navegar)
+                eventBus.on('element.click', function(e) {
+                    const name = e.element.businessObject.name?.toLowerCase().trim();
+                    if (window.CONFIG && window.CONFIG.fluxogramas) {
+                        const links = window.CONFIG.fluxogramas.links;
+                        if(name && links[name]) loadFlow(links[name]);
+                    }
+                });
+                
+                // Efeito Hover
+                eventBus.on('element.hover', function(e) {
+                    const name = e.element.businessObject.name?.toLowerCase().trim();
+                    if (window.CONFIG && window.CONFIG.fluxogramas) {
+                        const links = window.CONFIG.fluxogramas.links;
+                        if(name && links[name]) canvas.addMarker(e.element.id, 'highlight-node');
+                    }
+                });
+                eventBus.on('element.out', function(e) { canvas.removeMarker(e.element.id, 'highlight-node'); });
+            } else {
+                console.error("Biblioteca BpmnJS não carregou.");
+            }
+        });
+    </script>
+</body>
+</html>

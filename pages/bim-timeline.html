@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano de implementação BIM - P. AVELAR</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        :root { 
+            --primary-color: #002B49; 
+            --accent-color: #F26522; 
+            --bg-light: #f8f9fa; 
+            --text-dark: #333;
+            --status-blue: #2563eb;
+            --status-green: #22c55e;
+        }
+
+        body { font-family: 'Montserrat', sans-serif; background-color: white; color: var(--text-dark); margin: 0; padding: 40px 10px; }
+        .container { max-width: 1250px; margin: 0 auto; }
+        .header h1 { color: var(--primary-color); border-bottom: 3px solid var(--accent-color); padding-bottom: 10px; font-weight: 700; margin-bottom: 10px; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 30px; align-items: center; flex-wrap: wrap; }
+        .btn-export { background-color: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+        .file-input-wrapper { background: var(--bg-light); padding: 15px; border-radius: 8px; border: 2px dashed #ccc; flex: 1; min-width: 300px; text-align: center; }
+
+        .timeline { position: relative; padding: 20px 0; }
+        .timeline::before { content: ''; position: absolute; left: 31px; top: 0; bottom: 0; width: 4px; background: var(--primary-color); border-radius: 2px; }
+
+        .item-container { position: relative; margin-bottom: 10px; }
+        .level-0 { padding-left: 85px; margin-bottom: 25px; }
+        
+        .level-0 > .marker { 
+            position: absolute; left: 10px; top: 0; width: 46px; height: 46px; 
+            background: var(--primary-color); border: 4px solid white; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            color: white; font-weight: 700; z-index: 2; box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+        }
+
+        .card { 
+            background: white; border-radius: 6px; padding: 8px 15px; border: 1px solid #eee; 
+            display: flex; align-items: center; gap: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03); transition: 0.2s; 
+        }
+        .card:hover { border-color: var(--accent-color); }
+
+        .title-area { display: flex; align-items: center; flex: 1; min-width: 0; cursor: pointer; }
+        .title { font-weight: 500; font-size: 0.85rem; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .level-0 .title { font-weight: 700; font-size: 1rem; color: var(--primary-color); }
+        
+        .editable-meta { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+        .edit-input, .edit-select { 
+            border: 1px solid #ddd; padding: 4px 6px; border-radius: 4px; 
+            font-family: 'Montserrat'; font-size: 0.7rem; color: #555;
+            background-color: #fff;
+        }
+        
+        .resp-field { width: 160px; } /* Aumentado para caber nomes longos */
+        .dur-field { width: 45px; }
+        .status-field { width: 130px; font-weight: 700; text-transform: uppercase; }
+
+        .status-andamento { background-color: var(--status-blue) !important; color: white !important; }
+        .status-finalizado { background-color: var(--status-green) !important; color: white !important; }
+
+        .children { margin-left: 12px; display: none; border-left: 1px solid #e2e8f0; padding-left: 8px; margin-top: 5px; }
+        .expanded > .children { display: block; }
+        .toggle-icon { color: var(--accent-color); font-size: 0.6rem; margin-right: 8px; flex-shrink: 0; }
+        .no-children .toggle-icon { visibility: hidden; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Plano de implementação BIM (PIB)</h1>
+    </div>
+
+    <div class="controls">
+        <div class="file-input-wrapper">
+            <input type="file" id="excel_file" accept=".xlsx, .xls" />
+        </div>
+        <button class="btn-export" onclick="exportToExcel()">💾 Salvar Planilha Atualizada</button>
+    </div>
+
+    <div id="timeline_container" class="timeline"></div>
+</div>
+
+<script>
+    let currentData = [];
+    
+    // Lista de responsáveis baseada na imagem enviada
+    const responsaveisList = [
+        "BIM manager", "Lider instalações", "Lider Arquitetura", "Lider Apoio", 
+        "Lider Orçamento", "Lider Estrutural", "Lider Geral", "Lider RH", 
+        "Planejamento", "Diretor de engenharia", "Sistema", "Processos", 
+        "Arquiteto", "Engenheiro - Estrutura", "Engenheiro - Eletrica", 
+        "Engenheiro - Hidro", "Estagiário"
+    ];
+
+    document.getElementById('excel_file').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const data = new Uint8Array(event.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            currentData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            renderTimeline(currentData);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function getStatusClass(status) {
+        const s = status ? status.toString().toLowerCase() : "";
+        if (s.includes('andamento')) return 'status-andamento';
+        if (s.includes('finalizado')) return 'status-finalizado';
+        return '';
+    }
+
+    function getResponsavelOptions(selected) {
+        return responsaveisList.map(name => 
+            `<option value="${name}" ${selected === name ? 'selected' : ''}>${name}</option>`
+        ).join('');
+    }
+
+    function renderTimeline(rows) {
+        const container = document.getElementById('timeline_container');
+        container.innerHTML = '';
+        let stack = { '-1': container }; 
+        let mainCounter = 0;
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            let content = "";
+            let level = -1;
+            for (let colIdx = 0; colIdx <= 7; colIdx++) {
+                if (row[colIdx]) { content = row[colIdx]; level = colIdx; break; }
+            }
+            if (level === -1) continue;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `item-container level-${level} no-children`;
+            
+            const resp = row[9] || '';
+            const dur = row[10] || '0';
+            const status = row[12] || 'A iniciar';
+
+            let markerHtml = level === 0 ? `<div class="marker">${++mainCounter}</div>` : "";
+
+            itemDiv.innerHTML = `
+                ${markerHtml}
+                <div class="card">
+                    <div class="title-area" onclick="toggleItem(this)">
+                        <span class="toggle-icon">▶</span>
+                        <span class="title" title="${content}">${content}</span>
+                    </div>
+                    <div class="editable-meta">
+                        <select class="edit-select resp-field" onchange="updateRow(${i}, 9, this.value)">
+                            <option value="">Selecione...</option>
+                            ${getResponsavelOptions(resp)}
+                        </select>
+                        <input type="number" class="edit-input dur-field" value="${dur}" onchange="updateRow(${i}, 10, this.value)">
+                        <select class="edit-select status-field ${getStatusClass(status)}" onchange="updateStatus(this, ${i})">
+                            <option value="A iniciar" ${status === 'A iniciar' ? 'selected' : ''}>A INICIAR</option>
+                            <option value="Em andamento" ${status === 'Em andamento' ? 'selected' : ''}>ANDAMENTO</option>
+                            <option value="Finalizado" ${status === 'Finalizado' ? 'selected' : ''}>FINALIZADO</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="children"></div>
+            `;
+
+            const parent = stack[level - 1];
+            if (level === 0) container.appendChild(itemDiv);
+            else if (parent) {
+                parent.classList.remove('no-children');
+                parent.querySelector('.children').appendChild(itemDiv);
+            }
+
+            stack[level] = itemDiv;
+            for (let l = level + 1; l <= 7; l++) delete stack[l];
+        }
+    }
+
+    function toggleItem(el) {
+        el.closest('.item-container').classList.toggle('expanded');
+    }
+
+    function updateRow(rowIndex, colIndex, value) {
+        currentData[rowIndex][colIndex] = value;
+    }
+
+    function updateStatus(selectEl, rowIndex) {
+        const val = selectEl.value;
+        updateRow(rowIndex, 12, val);
+        selectEl.classList.remove('status-andamento', 'status-finalizado');
+        const newClass = getStatusClass(val);
+        if (newClass) selectEl.classList.add(newClass);
+    }
+
+    function exportToExcel() {
+        if (currentData.length === 0) return alert("Carregue um arquivo primeiro!");
+        const ws = XLSX.utils.aoa_to_sheet(currentData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Cronograma");
+        XLSX.writeFile(wb, "Cronograma_Atualizado.xlsx");
+    }
+</script>
+</body>
+</html>
