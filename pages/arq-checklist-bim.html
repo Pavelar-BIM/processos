@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P. AVELAR - CHECKLIST</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <style>
+        :root { --primary: #002B49; --accent: #F26522; --bg: #f5f5f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        
+        body { background: var(--bg); color: #333; min-height: 100vh; overflow-y: auto; }
+
+        header { 
+            background: white; 
+            padding: 20px 40px; 
+            border-bottom: 3px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        #disciplina-tit { color: var(--primary); font-weight: 800; font-size: 1.6rem; text-transform: uppercase; line-height: 1.1; }
+        #checklist-tit { color: #666; font-weight: 500; font-size: 1rem; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .controls { 
+            padding: 15px 40px; 
+            display: flex; 
+            gap: 15px; 
+            background: white; 
+            border-bottom: 1px solid #ddd; 
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .btn { 
+            padding: 10px 22px; border: none; border-radius: 4px; 
+            cursor: pointer; font-weight: 700; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .btn-download { background: var(--accent); color: white; }
+        .btn-clear { background: #e74c3c; color: white; margin-left: auto; }
+        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
+        
+        #status-save { font-size: 0.75rem; color: #aaa; font-style: italic; }
+
+        #checklist-container { 
+            padding: 30px 40px; 
+            max-width: 1300px; 
+            margin: 0 auto; 
+            width: 100%; 
+        }
+        
+        .discipline-group { margin-bottom: 30px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #eee; }
+        .discipline-title { 
+            background: var(--primary); color: white; 
+            padding: 14px 20px; font-size: 0.9rem; 
+            font-weight: 700; text-transform: uppercase;
+        }
+
+        .item-row { 
+            display: grid; grid-template-columns: 1fr 240px; 
+            padding: 15px 20px; border-bottom: 1px solid #f0f0f0; 
+            align-items: center; gap: 25px;
+        }
+        .item-row:last-child { border-bottom: none; }
+        .item-row:hover { background: #fafafa; }
+        .item-text { font-size: 0.85rem; color: #444; line-height: 1.6; font-weight: 500; }
+
+        select { 
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px; 
+            font-size: 0.8rem; width: 100%; cursor: pointer; background-color: #fff;
+            transition: all 0.2s;
+        }
+        select:focus { border-color: var(--accent); outline: none; }
+        select.filled { border: 2px solid var(--accent); background: #fff9f6; font-weight: 700; color: var(--accent); }
+
+        #loading-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+        }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="font-weight:600; color:#002B49;">SINCRONIZANDO PLANILHA...</p>
+    </div>
+
+    <header>
+        <div id="disciplina-tit">CARREGANDO...</div>
+        <div id="checklist-tit">AGUARDE UM INSTANTE</div>
+    </header>
+
+    <div class="controls">
+        <button class="btn btn-download" onclick="exportToExcel()">📥 BAIXAR EXCEL PREENCHIDO</button>
+        <button class="btn btn-clear" onclick="clearData()">🗑️ LIMPAR TUDO</button>
+        <div id="status-save"></div>
+    </div>
+
+    <div id="checklist-container"></div>
+
+    <script>
+        let currentWorkbook = null;
+        let checklistData = [];
+        let options = [];
+        
+        const EXCEL_PATH = '../assets/excel/ARQ-CHECKLIST-BIM.xlsx';
+
+        window.addEventListener('DOMContentLoaded', loadExcelFromServer);
+
+        async function loadExcelFromServer() {
+            try {
+                const response = await fetch(EXCEL_PATH);
+                if (!response.ok) throw new Error("Não foi possível carregar o arquivo Excel.");
+                
+                const arrayBuffer = await response.arrayBuffer();
+                currentWorkbook = new ExcelJS.Workbook();
+                await currentWorkbook.xlsx.load(arrayBuffer);
+                
+                const checkSheet = currentWorkbook.getWorksheet('CHECKLIST');
+
+                // Títulos do Cabeçalho
+                const disciplina = checkSheet.getCell('A3').value;
+                document.getElementById('disciplina-tit').innerText = disciplina || 'DISCIPLINA';
+
+                let tituloPlanilha = "";
+                const row1 = checkSheet.getRow(1);
+                row1.eachCell({ includeEmpty: false }, (cell) => {
+                    if(!tituloPlanilha) tituloPlanilha = cell.value;
+                });
+                document.getElementById('checklist-tit').innerText = tituloPlanilha || 'CHECKLIST DE PROJETOS';
+
+                // --- CORREÇÃO AQUI: Capturando Opções de A1 a A3 ---
+                const optSheet = currentWorkbook.getWorksheet('OPÇÕES');
+                options = [];
+                if(optSheet) {
+                    // Iteramos pelas linhas 1, 2 e 3 explicitamente
+                    for (let i = 1; i <= 3; i++) {
+                        const val = optSheet.getRow(i).getCell(1).value;
+                        if (val) options.push(val.toString().trim());
+                    }
+                }
+
+                // Carregar Itens do Checklist
+                checklistData = [];
+                checkSheet.eachRow((row, rowNumber) => {
+                    if (rowNumber >= 5) {
+                        const sub = row.getCell(1).value; 
+                        const item = row.getCell(2).value; 
+                        if (item && item.toString().trim() !== "") {
+                            checklistData.push({
+                                subdisciplina: sub ? sub.toString().trim() : 'GERAL',
+                                item: item.toString().trim(),
+                                rowNum: rowNumber
+                            });
+                        }
+                    }
+                });
+
+                renderChecklist();
+                checkLocalStorage();
+                document.getElementById('status-save').innerText = "";
+            } catch (err) {
+                console.error(err);
+                document.getElementById('checklist-container').innerHTML = `<p style="color:red; text-align:center; padding:50px;">Erro fatal: ${err.message}</p>`;
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        function renderChecklist() {
+            const container = document.getElementById('checklist-container');
+            container.innerHTML = '';
+
+            const grouped = checklistData.reduce((acc, obj) => {
+                const key = obj.subdisciplina;
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(obj);
+                return acc;
+            }, {});
+
+            for (const group in grouped) {
+                const section = document.createElement('div');
+                section.className = 'discipline-group';
+                let html = `<div class="discipline-title">${group}</div>`;
+                
+                grouped[group].forEach(item => {
+                    // Gera um ID único baseado no texto do item para salvar no cache
+                    const safeId = btoa(unescape(encodeURIComponent(item.item))).substring(0, 24);
+                    html += `
+                        <div class="item-row">
+                            <div class="item-text">${item.item}</div>
+                            <div class="item-action">
+                                <select id="${safeId}" class="check-input" data-row="${item.rowNum}" onchange="saveProgress('${safeId}', this.value)">
+                                    <option value="">Selecione...</option>
+                                    ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `;
+                });
+                section.innerHTML = html;
+                container.appendChild(section);
+            }
+        }
+
+        function saveProgress(id, value) {
+            const el = document.getElementById(id);
+            if(value) el.classList.add('filled'); else el.classList.remove('filled');
+
+            const cache = JSON.parse(localStorage.getItem('p_avelar_cache_hid_v2') || '{}');
+            cache[id] = value;
+            localStorage.setItem('p_avelar_cache_hid_v2', JSON.stringify(cache));
+            document.getElementById('status-save').innerText = "Alterações salvas localmente.";
+        }
+
+        function checkLocalStorage() {
+            const cache = JSON.parse(localStorage.getItem('p_avelar_cache_hid_v2') || '{}');
+            Object.keys(cache).forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.value = cache[id];
+                    if(el.value) el.classList.add('filled');
+                }
+            });
+        }
+
+        function clearData() {
+            if(confirm('Isso apagará todas as seleções feitas nesta página. Continuar?')) {
+                localStorage.removeItem('p_avelar_cache_hid_v2');
+                location.reload();
+            }
+        }
+
+        async function exportToExcel() {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const checkSheet = currentWorkbook.getWorksheet('CHECKLIST');
+                const selects = document.querySelectorAll('.check-input');
+
+                selects.forEach(sel => {
+                    const rowNum = parseInt(sel.getAttribute('data-row'));
+                    const value = sel.value;
+                    // Salva o valor selecionado na Coluna E (índice 5) conforme lógica original
+                    if(value) {
+                        checkSheet.getRow(rowNum).getCell(3).value = value;
+                    } else {
+                        checkSheet.getRow(rowNum).getCell(3).value = null;
+                    }
+                });
+
+                const buffer = await currentWorkbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'CHECKLIST_BIM_PREENCHIDO.xlsx';
+                a.click();
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao exportar o arquivo.");
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
