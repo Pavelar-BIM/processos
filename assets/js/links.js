@@ -1,6 +1,4 @@
-/* -------------------------------------------------------------------------
-   ARQUIVO DE LINKS - P. AVELAR (RESTAURADO)
-   ------------------------------------------------------------------------- */
+
 
 window.CONFIG = {
     referencias: {
@@ -72,7 +70,8 @@ window.CONFIG = {
                             nome: "Modelagem", 
                             subitens: [ 
                                 { nome: "BIM Mandate", link: "https://docs.google.com/document/d/1ibmT17CEs1Ao6wvdHqdl6rNAkpJo78No/preview" },
-                                { nome: "Criação de Famílias", link: "assets/bpmn/arq-modelagem-familias.bpmn" }
+                                { nome: "Criação de Famílias", link: "assets/bpmn/arq-modelagem-familias.bpmn" },
+                                { nome: "Checklist modelagem", link: "pages/arq-checklist-bim.html" }
                             ]
                         }
                     ]
@@ -113,4 +112,3 @@ window.CONFIG = {
         }
     }
 };
-
