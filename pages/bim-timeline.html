@@ -6,7 +6,7 @@
     <title>Plano de implementação BIM - P. AVELAR</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     
     <style>
         :root { 
@@ -24,7 +24,7 @@
         
         .controls { display: flex; gap: 10px; margin-bottom: 30px; align-items: center; flex-wrap: wrap; }
         .btn-export { background-color: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
-        .file-input-wrapper { background: var(--bg-light); padding: 15px; border-radius: 8px; border: 2px dashed #ccc; flex: 1; min-width: 300px; text-align: center; }
+        .status-msg { font-size: 0.85rem; color: #666; font-style: italic; }
 
         .timeline { position: relative; padding: 20px 0; }
         .timeline::before { content: ''; position: absolute; left: 31px; top: 0; bottom: 0; width: 4px; background: var(--primary-color); border-radius: 2px; }
@@ -57,7 +57,7 @@
             background-color: #fff;
         }
         
-        .resp-field { width: 160px; } /* Aumentado para caber nomes longos */
+        .resp-field { width: 160px; }
         .dur-field { width: 45px; }
         .status-field { width: 130px; font-weight: 700; text-transform: uppercase; }
 
@@ -68,9 +68,23 @@
         .expanded > .children { display: block; }
         .toggle-icon { color: var(--accent-color); font-size: 0.6rem; margin-right: 8px; flex-shrink: 0; }
         .no-children .toggle-icon { visibility: hidden; }
+
+        /* Overlay de carregamento igual ao seu outro arquivo */
+        #loading-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(255,255,255,0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999; display: none;
+        }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p style="font-weight:600; color:#002B49;">PROCESSANDO PLANILHA...</p>
+</div>
 
 <div class="container">
     <div class="header">
@@ -78,20 +92,16 @@
     </div>
 
     <div class="controls">
-        <div class="file-input-wrapper">
-            <input type="file" id="excel_file" accept=".xlsx, .xls" />
-        </div>
         <button class="btn-export" onclick="exportToExcel()">💾 Salvar Planilha Atualizada</button>
+        <span id="load_status" class="status-msg">Iniciando...</span>
     </div>
 
     <div id="timeline_container" class="timeline"></div>
 </div>
 
 <script>
-    let currentData = [];
-    
-    // Lista de responsáveis baseada na imagem enviada
-    const responsaveisList = [
+    let currentWorkbook = null;
+    let responsaveisList = [
         "BIM manager", "Lider instalações", "Lider Arquitetura", "Lider Apoio", 
         "Lider Orçamento", "Lider Estrutural", "Lider Geral", "Lider RH", 
         "Planejamento", "Diretor de engenharia", "Sistema", "Processos", 
@@ -99,17 +109,42 @@
         "Engenheiro - Hidro", "Estagiário"
     ];
 
-    document.getElementById('excel_file').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const data = new Uint8Array(event.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            currentData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
-            renderTimeline(currentData);
-        };
-        reader.readAsArrayBuffer(file);
-    });
+    const EXCEL_PATH = '../assets/excel/BIM-TIMELINE.xlsx';
+
+    window.addEventListener('DOMContentLoaded', loadExcelFromServer);
+
+    async function loadExcelFromServer() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const response = await fetch(EXCEL_PATH);
+            if (!response.ok) throw new Error("Arquivo não encontrado.");
+            
+            const arrayBuffer = await response.arrayBuffer();
+            currentWorkbook = new ExcelJS.Workbook();
+            await currentWorkbook.xlsx.load(arrayBuffer);
+            
+            const sheet = currentWorkbook.worksheets[0];
+            const rows = [];
+            
+            // Converte as linhas do ExcelJS para o formato de array que o renderTimeline usa
+            sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+                const rowData = [];
+                for(let i = 1; i <= 15; i++) {
+                    const cell = row.getCell(i);
+                    rowData[i-1] = cell.value;
+                }
+                rows[rowNumber-1] = rowData;
+            });
+
+            renderTimeline(rows);
+            document.getElementById('load_status').innerText = "Arquivo BIM-TIMELINE.xlsx carregado.";
+        } catch (err) {
+            console.error(err);
+            document.getElementById('load_status').innerText = "Erro ao carregar planilha.";
+        } finally {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
+    }
 
     function getStatusClass(status) {
         const s = status ? status.toString().toLowerCase() : "";
@@ -136,6 +171,7 @@
 
             let content = "";
             let level = -1;
+            // Busca o conteúdo nas colunas 0 a 7
             for (let colIdx = 0; colIdx <= 7; colIdx++) {
                 if (row[colIdx]) { content = row[colIdx]; level = colIdx; break; }
             }
@@ -190,7 +226,9 @@
     }
 
     function updateRow(rowIndex, colIndex, value) {
-        currentData[rowIndex][colIndex] = value;
+        const sheet = currentWorkbook.worksheets[0];
+        // ExcelJS usa base 1 para linhas e colunas
+        sheet.getRow(rowIndex + 1).getCell(colIndex + 1).value = value;
     }
 
     function updateStatus(selectEl, rowIndex) {
@@ -201,12 +239,22 @@
         if (newClass) selectEl.classList.add(newClass);
     }
 
-    function exportToExcel() {
-        if (currentData.length === 0) return alert("Carregue um arquivo primeiro!");
-        const ws = XLSX.utils.aoa_to_sheet(currentData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Cronograma");
-        XLSX.writeFile(wb, "Cronograma_Atualizado.xlsx");
+    async function exportToExcel() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const buffer = await currentWorkbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'BIM_TIMELINE_ATUALIZADO.xlsx';
+            a.click();
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao exportar o arquivo.");
+        } finally {
+            document.getElementById('loading-overlay').style.display = 'none';
+        }
     }
 </script>
 </body>
