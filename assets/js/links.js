@@ -12,18 +12,43 @@ window.CONFIG = {
                 {
                     nome: "Templates",
                     subitens:[
-                        { nome: "Arquitetura",      link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\ARQUITETURA" },
-                        { nome: "Elétrica",           link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\ELETRICA" },
-                        { nome: "Hidráulica",        link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\HIDRAULICA" },
-                        { nome: "Estrutural",        link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\CIVIL" }
+                        { nome: "Arquitetura",      link: "https://drive.google.com/drive/folders/1qRgtlEvYYokOv8dKe8sa3OXFBATtK0NN?usp=drive_link" },
+                        { nome: "Elétrica",           link: "https://drive.google.com/drive/folders/1ZAGq0WSR-Zh5yYL0aWt_68afvIsUHIw5?usp=drive_link" },
+                        { nome: "Hidráulica",        link: "https://drive.google.com/drive/folders/1ADPPDWQZCpRZlEjrlViupE8QFmi99Gpn?usp=drive_link" },
+                        { nome: "Estrutural",        link: "https://drive.google.com/drive/folders/1ZXrqdE6wTNRkRtui-ZGFjpudX1C63414?usp=drive_link" },
+                        { nome: "Climatização",       link:"https://drive.google.com/drive/folders/1xfOdIRpHfoG7ZOcmiZfVoYnE3xYRxl8J?usp=drive_link"},
+                        { nome: "Compatibilização",     link:"https://drive.google.com/drive/folders/1wDpz3rqUhQJ8lQ4vfhmcRHW2byNtV0Av?usp=drive_link"},
+                        { nome: "GLP",     link:"https://drive.google.com/drive/folders/1NSrulj3A5ux-AAF1A-fNikIUh8TfxExq?usp=drive_link"},
                     ]
                 },
                 {
                     nome: "Plugins",
                     subitens:[
-                        { nome: "BIMflow",      link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\ARQUITETURA" },
-                        { nome: "Pyrevit",           link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\ELETRICA" },
-                        { nome: "Prosheets",        link: "G:\\Drives compartilhados\\BIM\\TEMPLATES\\HIDRAULICA" }
+                        { nome: "BIMflow",
+                            subitens:[
+                                { nome: "Download", link: "https://drive.google.com/file/d/1i1QPDNDFZDx6eEi2IlYvla82faGByULu/view?usp=drive_link" },
+                                { nome: "Tutorial: Istalação", link: "https://drive.google.com/file/d/1eRuySPx0u_F9gj6seOQOjwzE3R8h-pId/view" },
+                                { nome: "Tutoriais: Comandos", link: "https://classroom.google.com/w/NzQzNzQxMDE1MzM3/t/all" },
+                            
+                            ]      
+                        },
+
+
+                        { nome: "PyRevit",
+                            subitens:[
+                                { nome: "Download", link: "https://drive.google.com/drive/folders/16MF881KZuKMwAtksQ1lT6umbclJyWFSK?usp=drive_link" },
+                                { nome: "Tutorial: Instalação", link: "https://drive.google.com/drive/folders/11WC1VBir3s8B263fzgkY3KfseI3h5TV7?usp=drive_link" }
+                            
+                            ]      
+                        },
+
+                        { nome: "Prosheets",
+                            subitens:[
+                                { nome: "Download", link: "https://drive.google.com/drive/folders/1IOBWkrDlbMIOjks2LerTDKj2ys01U6Va?usp=drive_link" },
+                                { nome: "Tutorial: gerar PDF", link: "https://drive.google.com/file/d/1DShbFjxCqE15zNXT0T8RFQm9Vm1khobP/view" }
+                            
+                            ]      
+                        },
                     ]
                 }
             ]
