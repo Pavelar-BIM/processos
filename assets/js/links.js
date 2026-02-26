@@ -77,30 +77,21 @@ window.CONFIG = {
 
 
 
-        {
+        { 
             titulo: "PROCESSOS - DISCIPLINAS",
             itens: [
 
-                { 
-                    nome: "Arquitetura", 
-                    subitens: [ 
-                        { 
-                            nome: "Projetos", 
-                            subitens: [
-                                { nome: "Diretrizes gerais", link: "assets/pdf/DIRETRIZES ARQUITETURA_V00.pdf" },
-                                { nome: "Checklist executivo", link: "assets/pdf/CHECKLIST ARQUITETURA EXECUTIVO.pdf" }
-                            ]
-                        },
-                        { 
-                            nome: "Modelagem", 
-                            subitens: [ 
-                                { nome: "BIM Mandate", link: "https://docs.google.com/document/d/1ibmT17CEs1Ao6wvdHqdl6rNAkpJo78No/preview" },
-                                { nome: "Criação de Famílias", link: "assets/bpmn/arq-modelagem-familias.bpmn" },
-                                { nome: "Checklist modelagem", link: "pages/arq-checklist-bim.html" }
-                            ]
-                        }
-                    ]
+                {
+            nome: "Arquitetura",
+            subitens: [
+                { nome: "Diretrizes gerais", link: "assets/pdf/DIRETRIZES ARQUITETURA_V00.pdf" },
+                { nome: "BIM Mandate", link: "https://docs.google.com/document/d/1ibmT17CEs1Ao6wvdHqdl6rNAkpJo78No/preview" },
+                { nome: "Criação de Famílias", link: "assets/bpmn/arq-modelagem-familias.bpmn" },
+                { nome: "Checklist executivo", link: "assets/pdf/CHECKLIST ARQUITETURA EXECUTIVO.pdf" },
+                { nome: "Checklist modelagem", link: "pages/arq-checklist-bim.html" }
+                      ]
                 },
+
                 {  nome: "Estrutural", 
                             subitens: [
                         { nome: "Checklist - Pranchas de concreto", link: "pages/ec-checklist-pranchas concreto.html" },
