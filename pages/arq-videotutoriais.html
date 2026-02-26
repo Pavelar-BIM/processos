@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P. AVELAR - Vídeo Tutoriais</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="../assets/js/filepaths.js"></script>
+
+    <style>
+        :root { --primary: #002B49; --accent: #F26522; --bg: #f5f5f5; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+
+        body { background-color: var(--bg); padding: 40px 20px; color: #333; }
+
+        .header { 
+            border-bottom: 3px solid var(--accent); 
+            margin-bottom: 30px; 
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 { color: var(--primary); font-size: 1.5rem; text-transform: uppercase; }
+
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .video-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-top: 4px solid var(--primary);
+            transition: transform 0.2s;
+        }
+
+        .video-card:hover { transform: translateY(-5px); }
+
+        .video-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            min-height: 40px;
+            line-height: 1.4;
+        }
+
+        .btn-watch {
+            background-color: var(--accent);
+            color: white;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            transition: opacity 0.3s;
+        }
+
+        .btn-watch:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vídeo Tutoriais - Arquitetura</h1>
+    </div>
+
+    <div id="video-container" class="video-grid">
+        </div>
+
+    <script>
+        function renderVideos() {
+            const container = document.getElementById('video-container');
+            
+            // Verifica se PROJECT_ASSETS e DOCS existem
+            if (typeof PROJECT_ASSETS === 'undefined' || !PROJECT_ASSETS.DOCS) {
+                container.innerHTML = "<p>Erro: Não foi possível carregar os links de assets.</p>";
+                return;
+            }
+
+            const assets = PROJECT_ASSETS.DOCS;
+            
+            // Filtra todas as chaves que começam com "ARQ-VIDEO"
+            const videoKeys = Object.keys(assets).filter(key => key.startsWith("ARQ-VIDEO"));
+
+            if (videoKeys.length === 0) {
+                container.innerHTML = "<p>Nenhum vídeo tutorial encontrado.</p>";
+                return;
+            }
+
+            videoKeys.forEach(key => {
+                const url = assets[key];
+                // Formata o nome: Remove "ARQ-VIDEO-" e troca hifens por espaços
+                const cleanName = key.replace("ARQ-VIDEO-", "").replace(/-/g, " ");
+
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+                    <div class="video-title">${cleanName}</div>
+                    <a href="${url}" target="_blank" class="btn-watch">ASSISTIR TUTORIAL</a>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Inicia a renderização
+        window.onload = renderVideos;
+    </script>
+</body>
+</html>
